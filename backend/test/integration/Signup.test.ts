@@ -1,17 +1,17 @@
+import Account from "../../src/domain/entity/Account";
 import { AccountRepositoryDatabase, AccountRepositoryMemory } from "../../src/infra/repository/AccountRepository";
+import DatabaseConnection, { PgPromiseAdapter } from "../../src/infra/database/DatabaseConnection";
 import GetAccount from "../../src/application/usecase/GetAccount";
+import { MailerGatewayMemory } from "../../src/infra/gateway/MailerGateway";
 import Signup from "../../src/application/usecase/Signup";
 import sinon from "sinon";
-import { MailerGatewayMemory } from "../../src/infra/gateway/MailerGateway";
-import Account from "../../src/domain/Account";
-import DatabaseConnection, { PgPromiseAdapter } from "../../src/infra/database/DatabaseConnection";
 
 let connection: DatabaseConnection;
 let signup: Signup;
 let getAccount: GetAccount;
 
 beforeEach(() => {
-    //const accountRepository = new AccountRepositoryMemory();
+    // const accountRepository = new AccountRepositoryMemory();
     connection = new PgPromiseAdapter();
     const accountRepository = new AccountRepositoryDatabase(connection);
     const mailerGateway = new MailerGatewayMemory();

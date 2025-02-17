@@ -1,9 +1,9 @@
-import Ride from "../../domain/Ride";
-import AccountRepository from "../../infra/repository/AccountRepository";
+import Ride from "../../domain/entity/Ride";
 import RideRepository from "../../infra/repository/RideRepository";
+import AccountRepository from "../repository/AccountRepository";
 
 export default class RequestRide {
-
+	// DIP - Dependency Inversion Principle
 	constructor (readonly accountRepository: AccountRepository, readonly rideRepository: RideRepository) {
 	}
 	
@@ -11,12 +11,11 @@ export default class RequestRide {
 		const accountData = await this.accountRepository.getAccountById(input.passengerId);
 		if (!accountData.isPassenger) throw new Error("Account must be from a passenger");
 		const hasActiveRide = await this.rideRepository.hasActiveRideByPassengerId(input.passengerId);
-		console.log(hasActiveRide);
 		if (hasActiveRide) throw new Error("Passenger already have an active ride");
 		const ride = Ride.create(input.passengerId, input.fromLat, input.fromLong, input.toLat, input.toLong);
 		await this.rideRepository.saveRide(ride);
 		return {
-			rideId: ride.rideId
+			rideId: ride.getRideId()
 		}
 	}
 }

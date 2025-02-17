@@ -1,16 +1,18 @@
 import express, { Request, Response } from "express";
-import cors from 'cors'
-import Hapi from "@hapi/hapi"
+import cors from "cors";
+import Hapi from "@hapi/hapi";
+
+// Framework and Driver
 
 export default interface HttpServer {
-    register(method: string, url: string, callback: Function): void;
-    listen(port: number): void;
+    register (method: string, url: string, callback: Function): void;
+    listen (port: number): void;
 }
 
 export class ExpressAdapter implements HttpServer {
     app: any;
 
-    constructor() {
+    constructor () {
         this.app = express();
         this.app.use(express.json());
         this.app.use(cors());
@@ -26,15 +28,17 @@ export class ExpressAdapter implements HttpServer {
             }
         });
     }
+
     listen(port: number): void {
         this.app.listen(port);
     }
+
 }
 
 export class HapiAdapter implements HttpServer {
     server: Hapi.Server;
 
-    constructor() {
+    constructor () {
         this.server = Hapi.server({});
     }
 
@@ -47,13 +51,15 @@ export class HapiAdapter implements HttpServer {
                     const output = await callback(request.params, request.payload);
                     return output;
                 } catch (e: any) {
-                    return reply.response({ message: e.message }).code(422);
+                    return reply.response({ message: e.message}).code(422);
                 }
             }
-        })
+        })    
     }
+
     listen(port: number): void {
         this.server.settings.port = port;
         this.server.start();
     }
+
 }

@@ -1,12 +1,13 @@
-
 import { AccountRepositoryDatabase, AccountRepositoryMemory } from "../../src/infra/repository/AccountRepository";
+import DatabaseConnection, { PgPromiseAdapter } from "../../src/infra/database/DatabaseConnection";
 import GetAccount from "../../src/application/usecase/GetAccount";
-import Signup from "../../src/application/usecase/Signup";
+import GetRide from "../../src/application/usecase/GetRide";
 import { MailerGatewayMemory } from "../../src/infra/gateway/MailerGateway";
 import RequestRide from "../../src/application/usecase/RequestRide";
 import { RideRepositoryDatabase } from "../../src/infra/repository/RideRepository";
-import GetRide from "../../src/application/usecase/GetRide";
-import DatabaseConnection, { PgPromiseAdapter } from "../../src/infra/database/DatabaseConnection";
+import Signup from "../../src/application/usecase/Signup";
+import sinon from "sinon";
+import { PositionRepositoryDatabase } from "../../src/infra/repository/PositionRepository";
 
 let connection: DatabaseConnection;
 let signup: Signup;
@@ -15,15 +16,16 @@ let requestRide: RequestRide;
 let getRide: GetRide;
 
 beforeEach(() => {
-    //const accountRepository = new AccountRepositoryMemory();
+    // const accountRepository = new AccountRepositoryMemory();
     connection = new PgPromiseAdapter();
     const accountRepository = new AccountRepositoryDatabase(connection);
     const rideRepository = new RideRepositoryDatabase(connection);
+    const positionRepository = new PositionRepositoryDatabase(connection);
     const mailerGateway = new MailerGatewayMemory();
     signup = new Signup(accountRepository, mailerGateway);
     getAccount = new GetAccount(accountRepository);
     requestRide = new RequestRide(accountRepository, rideRepository);
-    getRide = new GetRide(accountRepository, rideRepository);
+    getRide = new GetRide(accountRepository, rideRepository, positionRepository);
 });
 
 test("Deve solicitar uma corrida", async function () {
@@ -44,23 +46,24 @@ test("Deve solicitar uma corrida", async function () {
     }
     const outputRequestRide = await requestRide.execute(inputRequestRide);
     expect(outputRequestRide.rideId).toBeDefined();
-    const outputGetRide = await getRide.execute(outputRequestRide.rideId)
-    expect(outputGetRide.rideId).toBe(outputRequestRide.rideId)
-    expect(outputGetRide.passengerId).toBe(outputSignup.accountId)
-    expect(outputGetRide.passengerName).toBe(inputSignup.name)
-    expect(outputGetRide.fromLat).toBe(inputRequestRide.fromLat)
-    expect(outputGetRide.fromLong).toBe(inputRequestRide.fromLong)
-    expect(outputGetRide.toLat).toBe(inputRequestRide.toLat)
-    expect(outputGetRide.toLat).toBe(inputRequestRide.toLat)
-    expect(outputGetRide.status).toBe("requested")
-    expect(outputGetRide.fare).toBe(0)
-    expect(outputGetRide.distance).toBe(0)
+    const outputGetRide = await getRide.execute(outputRequestRide.rideId);
+    console.log(outputGetRide);
+    expect(outputGetRide.rideId).toBe(outputRequestRide.rideId);
+    expect(outputGetRide.passengerId).toBe(outputSignup.accountId);
+    expect(outputGetRide.passengerName).toBe(inputSignup.name);
+    expect(outputGetRide.fromLat).toBe(inputRequestRide.fromLat);
+    expect(outputGetRide.fromLong).toBe(inputRequestRide.fromLong);
+    expect(outputGetRide.toLat).toBe(inputRequestRide.toLat);
+    expect(outputGetRide.toLong).toBe(inputRequestRide.toLong);
+    expect(outputGetRide.status).toBe("requested");
+    expect(outputGetRide.fare).toBe(0);
+    expect(outputGetRide.distance).toBe(0);
 });
 
 test("Não deve solicitar uma corrida se a conta não for de um passageiro", async function () {
     const inputSignup = {
         name: "John Doe",
-        email: `john.doee${Math.random()}@gmail.com`,
+        email: `john.doe${Math.random()}@gmail.com`,
         cpf: "97456321558",
         password: "123456",
         carPlate: "AAA9999",
@@ -77,10 +80,10 @@ test("Não deve solicitar uma corrida se a conta não for de um passageiro", asy
     await expect(() => requestRide.execute(inputRequestRide)).rejects.toThrow(new Error("Account must be from a passenger"));
 });
 
-test("Não deve solicitar uma corrida se já tiver outra ativa", async function () {
+test("Não pode solicitar uma corrida se já tiver outra ativa", async function () {
     const inputSignup = {
         name: "John Doe",
-        email: `john.doee${Math.random()}@gmail.com`,
+        email: `john.doe${Math.random()}@gmail.com`,
         cpf: "97456321558",
         password: "123456",
         isPassenger: true

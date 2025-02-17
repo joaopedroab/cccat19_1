@@ -3,7 +3,9 @@ export default interface MailerGateway {
 }
 
 export class MailerGatewayMemory implements MailerGateway {
-    async send (receipient: string, subject: string, message: string): Promise<void> {
-        console.log("send", receipient, subject, message)
+    
+    async send(receipient: string, subject: string, message: string): Promise<void> {
+        //console.log("send", receipient, subject, message);
     }
+
 }
